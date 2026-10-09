@@ -1,0 +1,42 @@
+name: Build and release Petrogenesis
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run package:web
+      - run: npm run package:win
+      - name: Generate SHA256 checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem release -File | Where-Object { $_.Extension -in '.exe','.zip','.html' } | ForEach-Object { $h = Get-FileHash $_.FullName -Algorithm SHA256; "$($h.Hash.ToLower())  $($_.Name)" } | Set-Content release/SHA256SUMS.txt
+      - name: Upload downloadable packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: Petrogenesis-downloads
+          path: |
+            release/*.exe
+            release/*.zip
+            release/*.html
+            release/SHA256SUMS.txt
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          gh release create "$env:GITHUB_REF_NAME" --repo "$env:GITHUB_REPOSITORY" --title "Petrogenesis $env:GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
+          Get-ChildItem release -File | Where-Object { $_.Extension -in '.exe','.zip','.html','.txt' } | ForEach-Object { gh release upload "$env:GITHUB_REF_NAME" $_.FullName --repo "$env:GITHUB_REPOSITORY" --clobber; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }

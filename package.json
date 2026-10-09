@@ -1,0 +1,52 @@
+{
+  "name": "petrogenesis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc -b && vite build",
+    "test": "vitest run src",
+    "test:e2e": "playwright test",
+    "package:web": "node scripts/package-web.mjs",
+    "package:win": "electron-builder --win portable --x64 --publish never"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "typescript": "~5.7.3",
+    "vite": "^6.1.0",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^3.0.5"
+  },
+  "main": "electron/main.cjs",
+  "description": "Petrogenesis — a mass-conserving educational magma chamber game",
+  "author": "GeologicalGame contributors",
+  "build": {
+    "appId": "dev.geologicalgame.petrogenesis",
+    "productName": "Petrogenesis",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "Petrogenesis-${version}-Windows-Portable.${ext}",
+      "signAndEditExecutable": false
+    }
+  }
+}
