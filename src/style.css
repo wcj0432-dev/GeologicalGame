@@ -566,3 +566,181 @@ footer {
     flex-direction: column;
   }
 }
+/* Narrative layer: normal document flow keeps the experiment unobstructed. */
+.narrator {
+  display: grid;
+  grid-template-columns: 145px 1fr;
+  gap: 24px;
+  margin: 0 0 22px;
+  background: linear-gradient(115deg, #20363b, #14252d 70%);
+  border-color: #68715a;
+}
+.portrait-wrap {
+  text-align: center;
+  align-self: center;
+}
+.goddess-portrait {
+  width: 135px;
+  filter: drop-shadow(0 0 15px #c7b17622);
+}
+.portrait-wrap small {
+  display: block;
+  font-size: 9px;
+  color: #b9c9ba;
+}
+.motion-point {
+  animation: goddess-point 1.2s ease-out;
+}
+.motion-nod {
+  animation: goddess-nod 0.8s ease-in-out;
+}
+.dialogue-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.dialogue-heading > div {
+  display: flex;
+  gap: 6px;
+}
+.dialogue-heading button {
+  font-size: 10px;
+  padding: 6px 9px;
+}
+.speaker {
+  display: block;
+  color: #e6c58f;
+  font-size: 13px;
+  margin: 14px 0 8px;
+}
+.dialogue-text {
+  font-size: 14px;
+  min-height: 48px;
+  max-width: 950px;
+  color: #dfebe7;
+  line-height: 1.9;
+}
+.dialogue-actions,
+.research-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.dialogue-actions button,
+.research-actions button {
+  font-size: 11px;
+  padding: 8px 12px;
+}
+.research-actions {
+  border-top: 1px solid #3c5050;
+  padding-top: 12px;
+}
+.action-feedback {
+  font-size: 11px;
+  color: #a9c5bb;
+  margin-top: 12px;
+}
+.dialogue-history {
+  max-height: 290px;
+  overflow: auto;
+  margin-top: 16px;
+  background: #10232a;
+  padding: 12px;
+  border-radius: 6px;
+}
+.dialogue-history details {
+  font-size: 12px;
+  border-bottom: 1px solid #314a4b;
+  padding: 10px;
+}
+.dialogue-history summary {
+  color: #d7bf96;
+  cursor: pointer;
+}
+.dialogue-history p {
+  margin: 10px 0;
+  color: #b7c9c6;
+}
+.science-evidence {
+  padding: 16px 20px;
+  border-left: 3px solid #d9b779;
+  background: #21343a;
+  margin-bottom: 22px;
+}
+.science-evidence h3 {
+  margin: 10px 0;
+}
+.science-evidence p,
+.science-evidence summary {
+  font-size: 12px;
+  color: #bed0cb;
+}
+.science-evidence details {
+  margin-top: 10px;
+}
+.analysis[data-focus] {
+  border-color: #a18d62;
+}
+.experiment-comparison > p {
+  font-size: 12px;
+  color: #a9c1bf;
+  margin-top: 12px;
+}
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid #efc480;
+  outline-offset: 3px;
+}
+@keyframes goddess-point {
+  0% {
+    transform: translateY(4px) rotate(-3deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes goddess-nod {
+  50% {
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .goddess-portrait {
+    animation: none;
+  }
+}
+@media (max-width: 800px) {
+  .narrator {
+    grid-template-columns: 95px 1fr;
+    gap: 12px;
+  }
+  .goddess-portrait {
+    width: 90px;
+  }
+  .dialogue-heading {
+    display: block;
+  }
+  .dialogue-heading > div {
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 500px) {
+  .narrator {
+    grid-template-columns: 1fr;
+  }
+  .portrait-wrap {
+    display: flex;
+    align-items: center;
+  }
+  .goddess-portrait {
+    width: 70px;
+  }
+  .dialogue-text {
+    font-size: 13px;
+  }
+}
+.selected-mineral{border:1px solid #d8bf88;border-radius:6px;padding:12px;background:#35443a}.selected-mineral i{transform:rotate(45deg) scale(1.6);margin:5px}

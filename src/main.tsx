@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import {
   minerals,
@@ -11,8 +11,6 @@ import {
 } from "./data";
 import {
   createState,
-  cool,
-  separate,
   mass,
   inventoryMass,
   percent,
@@ -30,6 +28,21 @@ import {
   type Save,
   type RecordEntry,
 } from "./storage";
+import { Narrator } from "./narrative/Narrator";
+import { ExperimentComparison } from "./narrative/Comparison";
+import { performAction, type GeologicalAction } from "./narrative/actions";
+import {
+  afterAction,
+  advance,
+  skip,
+  startLevel,
+  requestHint,
+  checkObjective,
+  sampleDiscovered,
+  enqueue,
+} from "./narrative/events";
+import { introductions } from "./narrative/scripts";
+import { mineralEvidence, type Focus } from "./narrative/science";
 import "./style.css";
 function load() {
   try {
@@ -149,7 +162,7 @@ function Curve({ s, mode }: { s: State; mode: string }) {
             points={values
               .map(
                 (v, j) =>
-                  `${50 + (650 * j) / Math.max(1, values.length - 1)},${140 - (120 * v) / max}`,
+                  `${50 + ((1300 - s.history[j].temperature) / 650) * 650},${140 - (120 * v) / max}`,
               )
               .join(" ")}
           />
@@ -158,7 +171,7 @@ function Curve({ s, mode }: { s: State; mode: string }) {
           开始 1300°C
         </text>
         <text x="590" y="163" fill="#9aafb3" fontSize="11">
-          当前 {s.temperature}°C →
+          终点 650°C →
         </text>
       </svg>
       <div className="legend">
@@ -172,7 +185,7 @@ function Curve({ s, mode }: { s: State; mode: string }) {
         ))}
         <span>
           {mode === "minerals" ? "全系统矿物质量 / kg" : "残余熔体 / wt.%"}
-          ；横轴为实验步骤
+          ；横轴为温度（°C，向右降温）
         </span>
       </div>
     </>
@@ -186,6 +199,13 @@ function App() {
   const [mineral, setMineral] = useState<Mineral>("olivine");
   const [fraction, setFraction] = useState(75);
   const [running, setRunning] = useState(false);
+  const [playback, setPlayback] = useState(1);
+  const [focus, setFocus] = useState<Focus | undefined>();
+  const direct = useCallback((f: Focus) => {
+    setFocus(f);
+    setDepth(f === "balance" ? 3 : 2);
+    setTab(f);
+  }, []);
   const [tab, setTab] = useState("history");
   const [note, setNote] = useState("实验自动保存在此浏览器");
   const [depth, setDepth] = useState(1);
@@ -215,31 +235,82 @@ function App() {
             return p;
           }
           const states = [...p.states];
-          states[active] = cool(
-            current,
-            Math.max(650, current.temperature - 10),
-            rate,
-          );
-          return { ...p, states };
+          const action: GeologicalAction = { type: "advanceSimulation", rate };
+          const executed = performAction(current, action, p.level);
+          if (!executed.ok) return p;
+          states[active] = executed.state;
+          return {
+            ...p,
+            states,
+            narrative: afterAction(
+              p.narrative,
+              current,
+              executed.state,
+              action,
+              p.level,
+              states,
+            ),
+          };
         }),
-      180,
+      180 / playback,
     );
     return () => clearInterval(timer);
-  }, [running, active, rate]);
+  }, [running, active, rate, playback]);
   function update(fn: (state: State) => State) {
     setSave((p) => ({
       ...p,
       states: p.states.map((v, i) => (i === active ? fn(v) : v)),
     }));
   }
+  function act(action: GeologicalAction) {
+    if (action.type === "inspectMinerals") {
+      setRunning(false);
+      direct("minerals");
+      setSave((p) => {
+        const observed = performAction(p.states[active], action, p.level);
+        return observed.ok
+          ? {
+              ...p,
+              narrative: {
+                ...p.narrative,
+                evidence: mineralEvidence(observed.state, mineral),
+                feedback: "女神暂停时间，放大所选矿物；库存不变。",
+              },
+            }
+          : p;
+      });
+      return;
+    }
+    setSave((p) => {
+      const before = p.states[active],
+        result = performAction(before, action, p.level);
+      if (!result.ok)
+        return { ...p, narrative: { ...p.narrative, feedback: result.error } };
+      const states = p.states.map((v, i) => (i === active ? result.state : v));
+      return {
+        ...p,
+        states,
+        narrative: afterAction(
+          p.narrative,
+          before,
+          result.state,
+          action,
+          p.level,
+          states,
+        ),
+      };
+    });
+  }
   function changeLevel(id: string) {
     setRunning(false);
     setActive(0);
+    setFocus(undefined);
     setTab("history");
     setDepth(id === "A" ? 1 : 2);
     setSave((p) => ({
       ...p,
       level: id,
+      narrative: startLevel(p.narrative, id),
       states: [createState("basalt", "A"), createState("basalt", "B")],
     }));
   }
@@ -261,6 +332,7 @@ function App() {
     };
     setSave((p) => ({
       ...p,
+      narrative: sampleDiscovered(p.narrative, names[kind], p.level),
       records: [
         ...p.records,
         {
@@ -349,7 +421,48 @@ function App() {
           <p>{result.text}</p>
         </div>
       </section>
-      <main>
+      <Narrator
+        state={save.narrative}
+        onNext={(choice) =>
+          setSave((p) => ({ ...p, narrative: advance(p.narrative, choice) }))
+        }
+        onSkip={() => {
+          setSave((p) => ({ ...p, narrative: skip(p.narrative) }));
+          setFocus(undefined);
+        }}
+        onQuiet={() =>
+          setSave((p) => ({
+            ...p,
+            narrative: { ...skip(p.narrative), quiet: !p.narrative.quiet },
+          }))
+        }
+        onHint={(tier) => {
+          setRunning(false);
+          setSave((p) => ({
+            ...p,
+            narrative: requestHint(p.narrative, p.level, p.states, tier),
+          }));
+        }}
+        onCheck={() => {
+          setRunning(false);
+          setSave((p) => ({
+            ...p,
+            narrative: checkObjective(p.narrative, p.level, p.states),
+          }));
+        }}
+        onInspect={() => act({ type: "inspectMinerals" })}
+        onReplay={() => {
+          const scene = introductions[save.level];
+          if (scene)
+            setSave((p) => ({
+              ...p,
+              narrative: enqueue(skip(p.narrative), scene, true),
+            }));
+        }}
+        onRequest={act}
+        onDirect={direct}
+      />
+      <main data-science-focus={focus}>
         <aside className="panel controls">
           <div className="panel-title">
             <h3>实验控制</h3>
@@ -461,7 +574,11 @@ function App() {
               <button
                 disabled={running || s.temperature <= 650}
                 onClick={() =>
-                  update((v) => cool(v, Math.min(target, v.temperature), rate))
+                  act({
+                    type: "coolMagma",
+                    target: Math.min(target, s.temperature),
+                    rate,
+                  })
                 }
               >
                 冷却至目标温度
@@ -469,9 +586,7 @@ function App() {
               <button
                 disabled={running || s.temperature <= 650}
                 onClick={() =>
-                  update((v) =>
-                    cool(v, Math.max(650, v.temperature - 25), rate),
-                  )
+                  act({ type: "stepTemperature", degrees: 25, rate })
                 }
               >
                 单步降温 −25°C
@@ -522,14 +637,31 @@ function App() {
               <button
                 disabled={running || mass(s.crystals[mineral]) < 1e-8}
                 onClick={() =>
-                  update((v) => separate(v, mineral, fraction / 100))
+                  act({
+                    type: "separateCrystals",
+                    mineral,
+                    fraction: fraction / 100,
+                  })
                 }
               >
                 ↓ 分离已形成晶体
               </button>
             </div>
           )}
+          <label>
+            时间推进倍率
+            <select
+              aria-label="时间推进倍率"
+              value={playback}
+              onChange={(e) => setPlayback(+e.target.value)}
+            >
+              <option value={1}>1× 播放</option>
+              <option value={4}>4× 播放</option>
+            </select>
+          </label>
           <p className="micro">
+            倍率仅改变播放间隔，不改变每步计算。
+            <br />
             固定压力 0.1 GPa · 无水体系
             <br />
             冷却单向进行，升温需重置
@@ -597,9 +729,31 @@ function App() {
               </div>
             ))}
           </div>
+          <label>
+            放大观察的矿物
+            <select
+              aria-label="观察矿物"
+              value={mineral}
+              onChange={(e) => setMineral(e.target.value as Mineral)}
+            >
+              {minerals.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <h4>已观察矿物</h4>
           {minerals.map((m) => (
-            <div className="mineral" key={m.id}>
+            <div
+              className={
+                "mineral " +
+                (focus === "minerals" && mineral === m.id
+                  ? "selected-mineral"
+                  : "")
+              }
+              key={m.id}
+            >
               <i style={{ background: m.color }} />
               <div>
                 <strong>{m.name}</strong>
@@ -634,7 +788,22 @@ function App() {
           </label>
         </aside>
       </main>
-      <section className="panel analysis">
+      <section className="panel analysis" data-focus={focus}>
+        {save.narrative.evidence && (
+          <div className="science-evidence">
+            <div className="eyebrow">
+              女神的标注 · 事件时数据快照（可随时重新观察）
+            </div>
+            <h3>{save.narrative.evidence.title}</h3>
+            <p>{save.narrative.evidence.summary}</p>
+            <details>
+              <summary>展开组分与库存标记</summary>
+              {save.narrative.evidence.annotations.map((a, i) => (
+                <p key={i}>{a}</p>
+              ))}
+            </details>
+          </div>
+        )}
         <div className="tabs">
           {[
             ["history", "实验进程"],
@@ -650,6 +819,7 @@ function App() {
                   ["model", "模型说明"],
                 ]
               : []),
+            ["compare", "两房路径对比"],
             ["records", "样品记录与对比"],
           ].map(([id, n]) => (
             <button
@@ -661,6 +831,7 @@ function App() {
             </button>
           ))}
         </div>
+        {tab === "compare" && <ExperimentComparison states={save.states} />}
         {tab === "history" && (
           <div className="history">
             {s.events.map((e, i) => (

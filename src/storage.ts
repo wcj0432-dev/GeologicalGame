@@ -1,3 +1,10 @@
+import {
+  initialNarrative,
+  emptyNarrative,
+  startLevel,
+  validNarrative,
+  type NarrativeState,
+} from "./narrative/events";
 import { createState, balance, mass, type State } from "./engine";
 import { modelVersion, oxides, minerals } from "./data";
 export type RecordEntry = {
@@ -9,6 +16,7 @@ export type RecordEntry = {
 };
 export type Save = {
   version: 1;
+  narrative: NarrativeState;
   level: string;
   states: State[];
   records: RecordEntry[];
@@ -63,11 +71,14 @@ export function decode(raw: string): Save {
     !Array.isArray(s.completed)
   )
     throw new Error("存档格式或模型版本不兼容");
+  if (!s.narrative) s.narrative = startLevel(emptyNarrative(), s.level);
+  if (!validNarrative(s.narrative)) throw new Error("叙事存档格式不兼容");
   return s;
 }
 export function initialSave(): Save {
   return {
     version: 1,
+    narrative: initialNarrative(),
     level: "A",
     states: [createState("basalt", "A"), createState("basalt", "B")],
     records: [],
