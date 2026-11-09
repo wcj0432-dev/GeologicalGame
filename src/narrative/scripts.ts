@@ -80,16 +80,16 @@ export const introductions: Record<string, Scene> = {
     "intro:C",
     "第三幕 · 打扫一间岩浆房",
     [
-      ["player", "里面有晶体了，能捞走吗？我想打扫一下。"],
+      ["player", "把晶体捞出去，液体总该立刻变清爽了吧？"],
       [
         "goddess",
-        "可以。先让两房结晶，再在其中一房选择矿物与分离比例。",
+        "可以。先记下你说的“立刻”。让两房结晶，只在其中一房捞走晶体。",
         "calm",
       ],
       ["player", "另一房不打扫，当对照。这个实验设计我会。"],
       [
         "goddess",
-        "很好。分离只移动已有固体，液相不会当场变成另一种岩浆。继续冷却，再在同温度比较。",
+        "先看分离前后，再继续冷却，最后在同温度比较。让我看看，是直觉先到，还是证据先到。",
         "warm",
       ],
     ],
@@ -199,3 +199,18 @@ introductions.B.nodes[introductions.B.nodes.length - 1].request = {
 };
 
 export const narrativeCatalog = { "zh-CN": { introductions, completions } };
+
+introductions.E = lines("intro:E", "第五幕 · 一眼看穿的代价", [
+  ["goddess", "一份来历不明的分析报告。以我的阅历，一眼就——", "proud"],
+  ["player", "先别一眼。上次我们还差点把快冷当成化学配方。"],
+  ["goddess", "那就交两份证词：结构能改变什么，晶体搬家又能改变什么。", "wry"],
+  ["player", "还有一条能解释报告的路径。找到可能，不冒充唯一。"],
+  ["goddess", "成交。记录样品，把证据钉上研究板。失败的实验也有发言权。", "warm"],
+], 60);
+completions.E = lines("complete:E", "第五幕终 · 给历史留一个问号", [
+  ["goddess", "结构、成分、搬家前后——你的证词经得起重放。", "warm"],
+  ["player", "所以，那一眼看穿的历史呢？"],
+  ["goddess", "改成：在当前模型里找到一种可能。没有给未知样品补办唯一身份证。", "wry"],
+  ["player", "神谕改成研究结论，严谨了不少。"],
+  ["goddess", "也更有趣。下一位研究者，还可以拿新的证据反驳我们。", "proud"],
+], 100);

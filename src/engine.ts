@@ -214,5 +214,5 @@ export function rock(s: State) {
           ? "辉长质岩石"
           : "玄武质岩石"
         : "演化结晶岩（描述性分类）";
-  return { name, texture, composition: comp, glass: mass(s.liquid), solid };
+  return { name, texture, composition: comp, unresolvedMatrix: mass(s.liquid), solid };
 }

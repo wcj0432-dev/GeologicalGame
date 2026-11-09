@@ -42,6 +42,12 @@ test("第一关叙事闭环、跳过、数据对比与一次性剧情存档", as
   await expect(guide.locator(".dialogue-actions")).toBeEmpty();
   await guide.getByRole("button", { name: "暂停并观察矿物" }).click();
   await expect(page.locator(".science-evidence")).toContainText("0.000 kg");
+  if (
+    (await guide
+      .getByRole("button", { name: "问女神" })
+      .getAttribute("aria-expanded")) === "false"
+  )
+    await guide.getByRole("button", { name: "问女神" }).click();
   await guide.getByRole("button", { name: "原理解释" }).click();
   await expect(guide.locator(".dialogue-text")).toContainText("教学代理");
   expect(errors).toEqual([]);
@@ -53,10 +59,17 @@ test("检查目标后的重复提示、安静模式和显式讲解", async ({ pa
   await expect(
     guide.getByRole("button", { name: "开启自动对话" }),
   ).toBeVisible();
+  await guide.getByRole("button", { name: "问女神" }).click();
   for (let i = 0; i < 3; i++)
     await guide.getByRole("button", { name: "检查研究目标" }).click();
   await expect(guide.locator(".dialogue-text")).toContainText("第3次");
   await guide.getByRole("button", { name: "跳过剧情" }).click();
+  if (
+    (await guide
+      .getByRole("button", { name: "问女神" })
+      .getAttribute("aria-expanded")) === "false"
+  )
+    await guide.getByRole("button", { name: "问女神" }).click();
   await guide.getByRole("button", { name: "原理解释" }).click();
   await expect(guide.locator(".dialogue-text")).toContainText("原理说明");
 });

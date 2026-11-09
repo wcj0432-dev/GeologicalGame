@@ -743,4 +743,697 @@ input:focus-visible {
     font-size: 13px;
   }
 }
-.selected-mineral{border:1px solid #d8bf88;border-radius:6px;padding:12px;background:#35443a}.selected-mineral i{transform:rotate(45deg) scale(1.6);margin:5px}
+.selected-mineral {
+  border: 1px solid #d8bf88;
+  border-radius: 6px;
+  padding: 12px;
+  background: #35443a;
+}
+.selected-mineral i {
+  transform: rotate(45deg) scale(1.6);
+  margin: 5px;
+}
+/* Chapter II: the experiment is a stage; detail remains available below it. */
+:root {
+  background: #0b151c;
+  color: #e2e9e6;
+}
+body {
+  background:
+    radial-gradient(ellipse at 55% 25%, #28433935, transparent 65%),
+    repeating-linear-gradient(0deg, transparent 0 79px, #6d8b8520 80px);
+}
+.app {
+  max-width: 1600px;
+  padding: 18px 24px;
+}
+header {
+  margin-bottom: 16px;
+}
+nav {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+nav button {
+  padding: 9px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+nav small {
+  display: inline;
+  margin-right: 7px;
+}
+.mission {
+  padding: 12px 18px;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+.mission h2 {
+  font-size: 18px;
+  margin: 3px 0 6px;
+}
+.mission p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+main {
+  grid-template-columns: 240px minmax(340px, 1fr) 330px;
+  grid-template-rows: 340px 176px;
+  grid-template-areas: "controls visual narrator" "controls info narrator";
+  gap: 12px;
+}
+.panel {
+  border-color: #344e55;
+  background: #12222bef;
+  padding: 16px;
+  border-radius: 5px;
+}
+.panel-title {
+  padding-bottom: 9px;
+  margin-bottom: 10px;
+}
+.controls {
+  grid-area: controls;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.controls label {
+  margin-top: 10px;
+}
+.controls .toggle {
+  margin-bottom: 10px;
+}
+.controls .toggle button {
+  font-size: 12px;
+  padding: 8px 3px;
+}
+.controls > button {
+  padding: 8px;
+  margin-bottom: 7px;
+  font-size: 13px;
+}
+.controls .micro {
+  margin-top: 10px;
+}
+input[type="range"] {
+  margin: 7px 0 12px;
+}
+.separation {
+  margin-top: 8px;
+}
+.separation h4 {
+  margin: 9px 0 5px;
+}
+.separation select {
+  padding: 7px;
+}
+.separation p {
+  font-size: 12px;
+}
+.visual {
+  grid-area: visual;
+  position: relative;
+  background: radial-gradient(ellipse at 50% 35%, #76533145, #10222b 65%);
+  overflow: hidden;
+}
+.temperature {
+  position: absolute;
+  top: 63px;
+  left: 25px;
+  font-size: 28px;
+}
+.visual .chamber {
+  height: 200px;
+  margin: 0 auto 7px;
+}
+.phasebar {
+  height: 7px;
+}
+.visual .legend {
+  margin: 7px 0;
+  font-size: 12px;
+}
+.sample-preview {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 3px 10px;
+  padding-top: 9px;
+  text-align: left;
+}
+.sample-preview .specimen {
+  grid-row: 1/3;
+}
+.sample-preview strong {
+  font-size: 16px;
+}
+.sample-preview span {
+  font-size: 11px;
+  grid-column: 2;
+}
+.sample-preview button {
+  grid-column: 3;
+  grid-row: 1/3;
+  font-size: 12px;
+}
+.specimen {
+  width: 100%;
+  max-width: 180px;
+  display: block;
+  margin: auto;
+}
+.info {
+  grid-area: info;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  column-gap: 18px;
+  align-content: start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.info .panel-title {
+  grid-column: 1/-1;
+  margin-bottom: 3px;
+}
+.info .metrics {
+  grid-column: 1/-1;
+  display: flex;
+  gap: 20px;
+}
+.metrics > div {
+  flex: 1;
+  padding: 6px 0;
+  gap: 8px;
+}
+.metrics strong {
+  font-size: 19px;
+}
+.info > label,
+.info > h4 {
+  display: none;
+}
+.info .mineral {
+  margin: 8px 0;
+  font-size: 12px;
+  gap: 7px;
+}
+.info .mineral i {
+  flex-shrink: 0;
+}
+.info .mineral:nth-of-type(4) i {
+  border-radius: 40%;
+}
+.info .mineral:nth-of-type(5) i {
+  height: 5px;
+}
+.info .event {
+  grid-column: 1/3;
+  padding: 6px 8px;
+  margin: 2px 0;
+}
+.info .event .eyebrow {
+  display: none;
+}
+.info .event p {
+  margin: 0;
+  font-size: 12px;
+}
+.info .collect {
+  grid-column: 3;
+  margin: 2px 0;
+}
+.info .collect button {
+  padding: 5px;
+}
+.narrator {
+  grid-area: narrator;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: linear-gradient(160deg, #3c5242, #14252e 55%);
+  position: relative;
+}
+.portrait-wrap {
+  width: 100%;
+  flex-shrink: 0;
+  height: 190px;
+  overflow: hidden;
+  position: relative;
+  background: radial-gradient(ellipse at bottom, #dac88d35, transparent 70%);
+}
+.goddess-art {
+  height: 100%;
+  position: relative;
+}
+.goddess-portrait {
+  width: 245px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  filter: drop-shadow(0 5px 15px #0005);
+}
+.expression-tag {
+  position: absolute;
+  bottom: 10px;
+  right: 16px;
+  color: #d8c69d;
+  font-size: 12px;
+  background: #10232cd9;
+  border: 1px solid #95825980;
+  padding: 3px 9px;
+}
+.portrait-wrap small {
+  position: absolute;
+  bottom: 10px;
+  left: 16px;
+  padding: 3px 8px;
+  background: #10232cdd;
+  font-size: 12px;
+}
+.dialogue-body {
+  padding: 12px 16px 16px;
+  background: linear-gradient(180deg, #13252df5, #15292f);
+  border-top: 1px solid #8e805b;
+}
+.dialogue-heading {
+  display: block;
+}
+.dialogue-heading > div {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.dialogue-heading button {
+  font-size: 11px;
+  padding: 4px 6px;
+}
+.speaker {
+  margin: 10px 0 5px;
+  font-size: 14px;
+}
+.dialogue-text {
+  font-size: 14px;
+  line-height: 1.75;
+  min-height: 60px;
+}
+.dialogue-actions,
+.research-actions {
+  margin-top: 9px;
+  gap: 5px;
+}
+.dialogue-actions button,
+.research-actions button {
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.research-actions {
+  padding-top: 9px;
+}
+.help-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.action-feedback {
+  font-size: 12px;
+  margin-top: 9px;
+}
+.analysis {
+  margin-top: 12px;
+  min-height: 160px;
+}
+.tabs {
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+}
+.tabs button {
+  font-size: 13px;
+}
+.records article > button {
+  margin-top: 10px;
+  display: block;
+  font-size: 12px;
+}
+.records .specimen {
+  height: 100px;
+}
+.research-board > p {
+  margin: 15px 0;
+  color: #b8cdca;
+  font-size: 14px;
+}
+.report-card {
+  border-left: 3px solid #c4ac7c;
+  padding: 16px 22px;
+  background: linear-gradient(100deg, #3d403340, #172e36);
+}
+.report-card h3 {
+  margin: 8px 0;
+  font-size: 18px;
+}
+.report-card p {
+  color: #ecd9ad;
+  margin-bottom: 7px;
+}
+.evidence-slots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 22px;
+}
+.evidence-slots label {
+  font-size: 14px;
+}
+.evidence-slots label:last-child {
+  grid-column: 1/-1;
+}
+.evidence-verdict {
+  padding: 14px 20px;
+  border: 1px solid #435b59;
+  background: #0d2026;
+}
+.evidence-verdict p {
+  font-size: 14px;
+  padding: 5px 0;
+  color: #bfcac2;
+}
+.evidence-verdict .verified {
+  color: #b8dca6;
+}
+.evidence-verdict strong {
+  display: block;
+  margin-top: 10px;
+  color: #e4ca94;
+}
+.science-panel p {
+  margin: 10px 0;
+  font-size: 14px;
+}
+.science-panel .phasebar {
+  height: 20px;
+  margin: 15px 0;
+}
+.science-panel .toggle {
+  margin-top: 15px;
+  max-width: 600px;
+}
+.science-panel .toggle button {
+  font-size: 14px;
+}
+@media (min-width: 1450px) {
+  main {
+    grid-template-rows: 380px 176px;
+    grid-template-columns: 250px minmax(400px, 1fr) 370px;
+  }
+  .visual .chamber {
+    height: 240px;
+  }
+  .portrait-wrap {
+    height: 230px;
+  }
+  .goddess-portrait {
+    width: 290px;
+  }
+}
+@media (max-width: 1100px) {
+  main {
+    grid-template-columns: 220px 1fr;
+    grid-template-rows: auto;
+    grid-template-areas: "controls visual" "controls info" "narrator narrator";
+  }
+  .visual {
+    min-height: 340px;
+  }
+  .info {
+    max-height: 220px;
+  }
+  .narrator {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+  }
+  .portrait-wrap {
+    height: 100%;
+    min-height: 220px;
+  }
+  nav {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .app {
+    padding: 12px;
+  }
+  main {
+    display: flex;
+    flex-direction: column;
+  }
+  .controls {
+    max-height: none;
+  }
+  .info {
+    max-height: none;
+    display: block;
+  }
+  .info .metrics {
+    display: block;
+  }
+  .info > label,
+  .info > h4 {
+    display: block;
+  }
+  .narrator {
+    display: flex;
+  }
+  .portrait-wrap {
+    min-height: 0;
+    height: 200px;
+  }
+  .visual {
+    min-height: 350px;
+  }
+  .sample-preview {
+    grid-template-columns: 70px 1fr;
+  }
+  .sample-preview button {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .evidence-slots {
+    grid-template-columns: 1fr;
+  }
+  .mission {
+    display: block;
+  }
+  .mission-result {
+    padding: 8px 0 0;
+    margin-top: 10px;
+  }
+  .analysis {
+    overflow-x: auto;
+  }
+}
+.header-right .button {
+  margin: 0;
+}
+header {
+  margin-bottom: 12px;
+}
+.mission {
+  padding: 9px 16px;
+}
+.mission h2 {
+  margin: 2px 0 4px;
+  font-size: 17px;
+}
+.mission p {
+  font-size: 12px;
+  line-height: 1.5;
+}
+main {
+  grid-template-rows: 320px 176px;
+}
+.visual .chamber {
+  height: 150px;
+  margin-bottom: 5px;
+}
+.sample-preview {
+  grid-template-columns: 75px 1fr auto;
+  padding-top: 6px;
+}
+.sample-preview .specimen {
+  max-height: 49px;
+}
+.portrait-wrap {
+  height: 185px;
+}
+.expression-sprite {
+  width: 245px;
+  height: 245px;
+  background-size: 300% 200%;
+  margin: -3px auto 0;
+  mask-image: linear-gradient(#000 70%, transparent);
+}
+.portrait-expand {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: #14262ada;
+}
+.art-gallery {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #0b171df5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.art-gallery img {
+  max-height: 95vh;
+  max-width: 90vw;
+  object-fit: contain;
+}
+.art-gallery button {
+  position: absolute;
+  right: 25px;
+  top: 20px;
+}
+.analysis-options {
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #b8c8bf;
+}
+.analysis-options summary {
+  cursor: pointer;
+}
+.analysis-options > div {
+  display: flex;
+  gap: 20px;
+}
+.analysis-options label {
+  flex: 1;
+}
+@media (min-width: 1450px) {
+  main {
+    grid-template-rows: 380px 176px;
+  }
+  .visual .chamber {
+    height: 210px;
+  }
+  .portrait-wrap {
+    height: 230px;
+  }
+  .expression-sprite {
+    width: 300px;
+    height: 300px;
+  }
+}
+@media (max-width: 1100px) {
+  main {
+    grid-template-rows: auto;
+  }
+  .visual .chamber {
+    height: 170px;
+  }
+  .portrait-wrap {
+    height: 100%;
+  }
+}
+@media (max-width: 700px) {
+  .portrait-wrap {
+    height: 185px;
+  }
+  .expression-sprite {
+    width: 245px;
+    height: 245px;
+  }
+}
+
+.art-gallery {
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  padding: 0;
+}
+.art-gallery:not([open]) {
+  display: none;
+}
+.art-gallery::backdrop {
+  background: #0b171df5;
+}
+
+.playback-settings {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #a7bcb8;
+}
+.playback-settings summary {
+  cursor: pointer;
+}
+.advanced-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: start;
+  gap: 5px 6px;
+}
+.advanced-controls > :not(button) {
+  grid-column: 1/-1;
+}
+.advanced-controls .panel-title {
+  margin-bottom: 2px;
+}
+.advanced-controls .toggle {
+  margin-bottom: 2px;
+}
+.advanced-controls > label {
+  margin: 3px 0;
+}
+.advanced-controls > input[type="range"] {
+  margin: 2px 0 7px;
+}
+.advanced-controls > button {
+  font-size: 12px;
+  padding: 6px 3px;
+  margin-bottom: 0;
+  line-height: 1.5;
+}
+.advanced-controls .separation {
+  margin-top: 5px;
+  padding-top: 0;
+}
+.advanced-controls .separation p {
+  margin: 0;
+  line-height: 1.4;
+}
+.advanced-controls .separation h4 {
+  margin: 7px 0 4px;
+}
+.advanced-controls .separation select {
+  margin: 6px 0;
+  padding: 6px;
+  font-size: 13px;
+}
+.advanced-controls .separation label {
+  margin: 6px 0 3px;
+}
+.advanced-controls .separation input {
+  margin: 4px 0 8px;
+}
+.advanced-controls .separation button {
+  padding: 8px;
+  font-size: 13px;
+}
+.advanced-controls .toggle button { padding:5px 3px; }
+.advanced-controls > button { font-size:11px; white-space:nowrap; }
+.advanced-controls .separation h4 { margin-top:3px; }
+.expression-sprite { clip-path:inset(4px); }

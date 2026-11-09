@@ -43,7 +43,38 @@ import {
 } from "./narrative/events";
 import { introductions } from "./narrative/scripts";
 import { mineralEvidence, type Focus } from "./narrative/science";
+import { beginRun, type ExperimentCommand } from "./experiments";
+import { evaluateResearch, evidenceSlots, researchTarget } from "./research";
+import { lines } from "./narrative/dialogue";
+import { completions } from "./narrative/scripts";
+import { Specimen } from "./visuals/Specimen";
+import { SciencePanel } from "./science/SciencePanel";
 import "./style.css";
+function tracked(
+  p: Save,
+  index: number,
+  before: State,
+  after: State,
+  action: GeologicalAction,
+) {
+  const runs = p.states.map(
+    (state, i) => p.runs?.[i] ?? beginRun(state, crypto.randomUUID()),
+  );
+  const command: ExperimentCommand =
+    action.type === "separateCrystals"
+      ? { kind: "separate", mineral: action.mineral, fraction: action.fraction }
+      : {
+          kind: "cool",
+          targetC: after.temperature,
+          rate: "rate" in action ? action.rate : "slow",
+        };
+  if (after !== before)
+    runs[index] = {
+      ...runs[index],
+      commands: [...runs[index].commands, command],
+    };
+  return runs;
+}
 function load() {
   try {
     return decode(localStorage.getItem(saveKey) ?? "");
@@ -63,6 +94,7 @@ function Chamber({ s, kind = "chamber" }: { s: State; kind?: string }) {
       { length: Math.round((amounts[i] / Math.max(1, total)) * 90) },
       (_, j) => ({
         color: m.color,
+        type: i,
         x: 34 + ((j * 47 + i * 89) % 270),
         y:
           312 -
@@ -109,16 +141,23 @@ function Chamber({ s, kind = "chamber" }: { s: State; kind?: string }) {
         />
         {kind !== "liquid" &&
           particles.map((p, i) => (
-            <polygon
-              key={i}
-              points={`${p.x},${p.y - p.size} ${p.x + p.size},${p.y} ${p.x},${p.y + p.size} ${p.x - p.size},${p.y}`}
-              fill={p.color}
-            />
+            <g key={i} transform={`translate(${p.x} ${p.y}) rotate(${i * 29})`}>
+              <path
+                d={
+                  p.type === 0
+                    ? `M0 ${-p.size}L${p.size} 0L0 ${p.size}L${-p.size} 0Z`
+                    : p.type === 1
+                      ? `M${-p.size} ${-p.size / 2}H${p.size}V${p.size / 2}H${-p.size}Z`
+                      : `M${-p.size * 1.4} -1H${p.size * 1.4}V2H${-p.size * 1.4}Z`
+                }
+                fill={p.color}
+              />
+            </g>
           ))}
       </g>
       <path d="M40 17h260M40 330h260" stroke="#697578" strokeWidth="3" />
       <text x="170" y="345" fill="#80969a" textAnchor="middle" fontSize="10">
-        示意晶体 • 数量与质量比例关联
+        晶体符号按质量比例抽样，非真实粒数／体积
       </text>
     </svg>
   );
@@ -212,7 +251,9 @@ function App() {
   const [compare, setCompare] = useState<string[]>([]);
   const level = levels.find((l) => l.id === save.level)!;
   const s = save.states[active];
-  const result = evaluate(save.level, save.states);
+  const research = evaluateResearch(save.research ?? {}, save.records);
+  const result =
+    save.level === "E" ? research : evaluate(save.level, save.states);
   useEffect(() => {
     try {
       localStorage.setItem(saveKey, encode(save));
@@ -222,7 +263,12 @@ function App() {
   }, [save]);
   useEffect(() => {
     if (result.passed && !save.completed.includes(save.level))
-      setSave((p) => ({ ...p, completed: [...p.completed, p.level] }));
+      setSave((p) => ({
+        ...p,
+        completed: [...p.completed, p.level],
+        narrative:
+          p.level === "E" ? enqueue(p.narrative, completions.E) : p.narrative,
+      }));
   }, [result.passed, save.level, save.completed]);
   useEffect(() => {
     if (!running) return;
@@ -242,6 +288,7 @@ function App() {
           return {
             ...p,
             states,
+            runs: tracked(p, active, current, executed.state, action),
             narrative: afterAction(
               p.narrative,
               current,
@@ -257,10 +304,18 @@ function App() {
     return () => clearInterval(timer);
   }, [running, active, rate, playback]);
   function update(fn: (state: State) => State) {
-    setSave((p) => ({
-      ...p,
-      states: p.states.map((v, i) => (i === active ? fn(v) : v)),
-    }));
+    setSave((p) => {
+      const next = fn(p.states[active]);
+      const runs = p.states.map(
+        (v, i) => p.runs?.[i] ?? beginRun(v, crypto.randomUUID()),
+      );
+      runs[active] = beginRun(next, crypto.randomUUID());
+      return {
+        ...p,
+        runs,
+        states: p.states.map((v, i) => (i === active ? next : v)),
+      };
+    });
   }
   function act(action: GeologicalAction) {
     if (action.type === "inspectMinerals") {
@@ -290,6 +345,7 @@ function App() {
       return {
         ...p,
         states,
+        runs: tracked(p, active, before, result.state, action),
         narrative: afterAction(
           p.narrative,
           before,
@@ -305,11 +361,12 @@ function App() {
     setRunning(false);
     setActive(0);
     setFocus(undefined);
-    setTab("history");
+    setTab(id === "E" ? "research" : "history");
     setDepth(id === "A" ? 1 : 2);
     setSave((p) => ({
       ...p,
       level: id,
+      runs: undefined,
       narrative: startLevel(p.narrative, id),
       states: [createState("basalt", "A"), createState("basalt", "B")],
     }));
@@ -327,7 +384,7 @@ function App() {
     }
     const names = {
       chamber: rock(s).name,
-      liquid: s.temperature <= 650 ? "玻璃基质（未成晶组分）" : "残余熔体",
+      liquid: s.temperature <= 650 ? "未解析基质（非玻璃预测）" : "残余熔体",
       cumulate: "堆晶产物",
     };
     setSave((p) => ({
@@ -340,12 +397,31 @@ function App() {
           name: names[kind],
           kind,
           state: structuredClone(s),
+          run: p.runs?.[active]
+            ? structuredClone(p.runs[active])
+            : beginRun(s, crypto.randomUUID()),
           date: new Date().toLocaleString("zh-CN"),
         },
       ],
     }));
     setNote("已创建库存快照；取样是观察记录，不重复扣除物质。");
     setTab("records");
+  }
+  function forkRecord(record: RecordEntry) {
+    setRunning(false);
+    const states = ["A", "B"].map((id) => ({
+      ...structuredClone(record.state),
+      id,
+    }));
+    setSave((p) => ({
+      ...p,
+      states,
+      runs: states.map((state) =>
+        beginRun(state, crypto.randomUUID(), record.run),
+      ),
+    }));
+    setActive(0);
+    setNote("已从完整库存建立两条独立分支；原样品和证据保留。");
   }
   function exportSave() {
     const url = URL.createObjectURL(
@@ -403,7 +479,7 @@ function App() {
             key={l.id}
           >
             <small>
-              {i === 4 ? "∞" : String(i + 1).padStart(2, "0")}{" "}
+              {l.id === "free" ? "∞" : String(i + 1).padStart(2, "0")}{" "}
               {save.completed.includes(l.id) ? "✓" : ""}
             </small>
             {l.title}
@@ -421,49 +497,10 @@ function App() {
           <p>{result.text}</p>
         </div>
       </section>
-      <Narrator
-        state={save.narrative}
-        onNext={(choice) =>
-          setSave((p) => ({ ...p, narrative: advance(p.narrative, choice) }))
-        }
-        onSkip={() => {
-          setSave((p) => ({ ...p, narrative: skip(p.narrative) }));
-          setFocus(undefined);
-        }}
-        onQuiet={() =>
-          setSave((p) => ({
-            ...p,
-            narrative: { ...skip(p.narrative), quiet: !p.narrative.quiet },
-          }))
-        }
-        onHint={(tier) => {
-          setRunning(false);
-          setSave((p) => ({
-            ...p,
-            narrative: requestHint(p.narrative, p.level, p.states, tier),
-          }));
-        }}
-        onCheck={() => {
-          setRunning(false);
-          setSave((p) => ({
-            ...p,
-            narrative: checkObjective(p.narrative, p.level, p.states),
-          }));
-        }}
-        onInspect={() => act({ type: "inspectMinerals" })}
-        onReplay={() => {
-          const scene = introductions[save.level];
-          if (scene)
-            setSave((p) => ({
-              ...p,
-              narrative: enqueue(skip(p.narrative), scene, true),
-            }));
-        }}
-        onRequest={act}
-        onDirect={direct}
-      />
       <main data-science-focus={focus}>
-        <aside className="panel controls">
+        <aside
+          className={`panel controls ${level.separation ? "advanced-controls" : ""}`}
+        >
           <div className="panel-title">
             <h3>实验控制</h3>
             <span>CONTROL</span>
@@ -648,24 +685,27 @@ function App() {
               </button>
             </div>
           )}
-          <label>
-            时间推进倍率
-            <select
-              aria-label="时间推进倍率"
-              value={playback}
-              onChange={(e) => setPlayback(+e.target.value)}
-            >
-              <option value={1}>1× 播放</option>
-              <option value={4}>4× 播放</option>
-            </select>
-          </label>
-          <p className="micro">
-            倍率仅改变播放间隔，不改变每步计算。
-            <br />
-            固定压力 0.1 GPa · 无水体系
-            <br />
-            冷却单向进行，升温需重置
-          </p>
+          <details className="playback-settings" open={!level.separation}>
+            <summary>播放与模型设置</summary>
+            <label>
+              时间推进倍率
+              <select
+                aria-label="时间推进倍率"
+                value={playback}
+                onChange={(e) => setPlayback(+e.target.value)}
+              >
+                <option value={1}>1× 播放</option>
+                <option value={4}>4× 播放</option>
+              </select>
+            </label>
+            <p className="micro">
+              倍率仅改变播放间隔，不改变每步计算。
+              <br />
+              固定压力 0.1 GPa · 无水体系
+              <br />
+              冷却单向进行，升温需重置
+            </p>
+          </details>
         </aside>
         <section className="panel visual">
           <div className="panel-title">
@@ -700,9 +740,10 @@ function App() {
             <span>● 已分离</span>
           </div>
           <div className="sample-preview">
+            <Specimen s={s} />
             <strong>{rock(s).name}</strong>
             <span>
-              {rock(s).texture}结构示意 · 未成晶组分在终点记为玻璃基质
+              {rock(s).texture}结构示意 · 低温余量为未解析基质；不预测玻璃含量
             </span>
             <button onClick={() => collect("chamber")}>＋ 记录岩石样品</button>
           </div>
@@ -729,20 +770,6 @@ function App() {
               </div>
             ))}
           </div>
-          <label>
-            放大观察的矿物
-            <select
-              aria-label="观察矿物"
-              value={mineral}
-              onChange={(e) => setMineral(e.target.value as Mineral)}
-            >
-              {minerals.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-          </label>
           <h4>已观察矿物</h4>
           {minerals.map((m) => (
             <div
@@ -772,21 +799,66 @@ function App() {
               <button onClick={() => collect("cumulate")}>收集堆晶记录</button>
             )}
           </div>
-          <label>
-            信息深度
-            <select
-              value={depth}
-              onChange={(e) => {
-                setDepth(+e.target.value);
-                setTab("history");
-              }}
-            >
-              <option value="1">直观观察</option>
-              <option value="2">基础科学分析</option>
-              <option value="3">模型与质量账本</option>
-            </select>
-          </label>
         </aside>
+        <Narrator
+          state={save.narrative}
+          onNext={(choice) =>
+            setSave((p) => ({ ...p, narrative: advance(p.narrative, choice) }))
+          }
+          onSkip={() => {
+            setSave((p) => ({ ...p, narrative: skip(p.narrative) }));
+            setFocus(undefined);
+          }}
+          onQuiet={() =>
+            setSave((p) => ({
+              ...p,
+              narrative: { ...skip(p.narrative), quiet: !p.narrative.quiet },
+            }))
+          }
+          onHint={(tier) => {
+            setRunning(false);
+            setSave((p) => ({
+              ...p,
+              narrative: requestHint(p.narrative, p.level, p.states, tier),
+            }));
+          }}
+          onCheck={() => {
+            setRunning(false);
+            setSave((p) => ({
+              ...p,
+              narrative:
+                p.level === "E"
+                  ? enqueue(
+                      p.narrative,
+                      lines(
+                        `research-check:${p.narrative.sequence}`,
+                        "证据检查",
+                        [
+                          [
+                            "goddess",
+                            research.checks.map((c) => c.text).join(" "),
+                            "calm",
+                          ],
+                        ],
+                        85,
+                      ),
+                      true,
+                    )
+                  : checkObjective(p.narrative, p.level, p.states),
+            }));
+          }}
+          onInspect={() => act({ type: "inspectMinerals" })}
+          onReplay={() => {
+            const scene = introductions[save.level];
+            if (scene)
+              setSave((p) => ({
+                ...p,
+                narrative: enqueue(skip(p.narrative), scene, true),
+              }));
+          }}
+          onRequest={act}
+          onDirect={direct}
+        />
       </main>
       <section className="panel analysis" data-focus={focus}>
         {save.narrative.evidence && (
@@ -804,6 +876,40 @@ function App() {
             </details>
           </div>
         )}
+        <details className="analysis-options">
+          <summary>分析工具与信息深度</summary>
+          <div>
+            {" "}
+            <label>
+              放大观察的矿物
+              <select
+                aria-label="观察矿物"
+                value={mineral}
+                onChange={(e) => setMineral(e.target.value as Mineral)}
+              >
+                {minerals.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              信息深度
+              <select
+                value={depth}
+                onChange={(e) => {
+                  setDepth(+e.target.value);
+                  setTab("history");
+                }}
+              >
+                <option value="1">直观观察</option>
+                <option value="2">基础科学分析</option>
+                <option value="3">模型与质量账本</option>
+              </select>
+            </label>
+          </div>
+        </details>
         <div className="tabs">
           {[
             ["history", "实验进程"],
@@ -821,6 +927,8 @@ function App() {
               : []),
             ["compare", "两房路径对比"],
             ["records", "样品记录与对比"],
+            ["research", "研究板"],
+            ["science", "MELTS 研究档案"],
           ].map(([id, n]) => (
             <button
               className={tab === id ? "selected" : ""}
@@ -831,6 +939,71 @@ function App() {
             </button>
           ))}
         </div>
+        {tab === "science" && <SciencePanel />}
+        {tab === "research" && (
+          <div className="research-board">
+            <div className="report-card">
+              <span className="eyebrow">档案 05 · 未知样品的两次证词</span>
+              <h3>报告只告诉我们结果，历史需要证据。</h3>
+              <p>
+                1000°C 液相 · SiO₂ {researchTarget.SiO2.min.toFixed(2)}–
+                {researchTarget.SiO2.max.toFixed(2)} wt.% · CaO{" "}
+                {researchTarget.CaO.min.toFixed(2)}–
+                {researchTarget.CaO.max.toFixed(2)} wt.%
+              </p>
+              <small>
+                教学合成分析 · 区间为谜题观察容差 ·{" "}
+                {researchTarget.modelVersion}
+              </small>
+            </div>
+            <p>
+              先记录两份650°C快／慢冷岩石，再重置或从样品分支，记录同温度的保留／分离液相。原记录一直保留。
+            </p>
+            <div className="evidence-slots">
+              {evidenceSlots.map((slot) => (
+                <label key={slot.key}>
+                  {slot.label}
+                  <select
+                    aria-label={slot.label}
+                    value={save.research?.[slot.key] ?? ""}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      setSave((p) => {
+                        const board = { ...p.research };
+                        if (id) board[slot.key] = id;
+                        else delete board[slot.key];
+                        return { ...p, research: board };
+                      });
+                    }}
+                  >
+                    <option value="">选择已记录的证据…</option>
+                    {save.records
+                      .filter((r) => r.run)
+                      .map((r, i) => (
+                        <option value={r.id} key={r.id}>
+                          #{i + 1} {r.name} · {r.state.id} ·{" "}
+                          {r.state.temperature}°C ·{" "}
+                          {r.kind === "chamber"
+                            ? rock(r.state).texture
+                            : r.kind === "liquid"
+                              ? "液相"
+                              : "堆晶"}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <div className="evidence-verdict" aria-live="polite">
+              {research.checks.map((c) => (
+                <p key={c.id} className={c.passed ? "verified" : ""}>
+                  {c.passed ? "✓" : "○"} {c.text}
+                </p>
+              ))}
+              <strong>{research.text}</strong>
+            </div>
+          </div>
+        )}
         {tab === "compare" && <ExperimentComparison states={save.states} />}
         {tab === "history" && (
           <div className="history">
@@ -917,7 +1090,7 @@ function App() {
               保留晶体每5°C有1.5%物质返回熔体，表示有限交换的教学代理，随后重新计算结晶。分离晶体不再交换。这不是完整平衡结晶或真实反应速率。全系统每种氧化物均守恒。
             </p>
             <p>
-              650°C时未成晶的物质记为玻璃基质，不凭空生成未支持的矿物。快慢冷仅控制结构示意。仅在总体化学和矿物组合满足基性条件时标记玄武质／辉长质岩石；不使用正式
+              650°C时未成晶的物质记为未解析基质，不凭空生成未支持的矿物。快慢冷仅控制结构示意。仅在总体化学和矿物组合满足基性条件时标记玄武质／辉长质岩石；不使用正式
               TAS/QAPF 分类。无挥发分、压力变化、氧化还原或部分熔融预测。
             </p>
           </div>
@@ -957,7 +1130,27 @@ function App() {
                           ? "液相"
                           : "分离固相"}
                     </p>
+                    <Specimen s={r.state} kind={r.kind} />
                     <p>{r.date}</p>
+                    {r.run && (
+                      <small>可重放 · {r.run.commands.length} 项操作</small>
+                    )}
+                    <button onClick={() => forkRecord(r)}>
+                      从此记录分成两房
+                    </button>
+                    {r.run && (
+                      <details>
+                        <summary>操作日志与分离证词</summary>
+                        {r.run.commands.map((c, i) => (
+                          <p key={i}>
+                            {i + 1}.{" "}
+                            {c.kind === "cool"
+                              ? `冷却至 ${c.targetC}°C · ${c.rate === "fast" ? "快速" : "缓慢"}`
+                              : `分离 ${minerals.find((m) => m.id === c.mineral)!.name} ${c.fraction * 100}%`}
+                          </p>
+                        ))}
+                      </details>
+                    )}
                     <small>
                       {r.state.source} · {r.state.version}
                     </small>

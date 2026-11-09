@@ -1,3 +1,5 @@
+import { verifyRun, type ExperimentRun } from "./experiments";
+import { type ResearchBoard } from "./research";
 import {
   initialNarrative,
   emptyNarrative,
@@ -13,9 +15,12 @@ export type RecordEntry = {
   kind: "chamber" | "liquid" | "cumulate";
   state: State;
   date: string;
+  run?: ExperimentRun;
 };
 export type Save = {
   version: 1;
+  runs?: ExperimentRun[];
+  research?: ResearchBoard;
   narrative: NarrativeState;
   level: string;
   states: State[];
@@ -56,7 +61,7 @@ export function decode(raw: string): Save {
   const s = JSON.parse(raw) as Save;
   if (
     s.version !== 1 ||
-    !["A", "B", "C", "D", "free"].includes(s.level) ||
+    !["A", "B", "C", "D", "E", "free"].includes(s.level) ||
     s.states.length !== 2 ||
     !s.states.every(validState) ||
     !Array.isArray(s.records) ||
@@ -66,11 +71,26 @@ export function decode(raw: string): Save {
         typeof r.name === "string" &&
         typeof r.date === "string" &&
         ["chamber", "liquid", "cumulate"].includes(r.kind) &&
-        validState(r.state),
+        validState(r.state) &&
+        (!r.run || verifyRun(r.run, r.state)),
     ) ||
     !Array.isArray(s.completed)
   )
     throw new Error("存档格式或模型版本不兼容");
+  if (
+    s.runs &&
+    (s.runs.length !== 2 ||
+      !s.runs.every((run, i) => verifyRun(run, s.states[i])))
+  )
+    throw Error("实验操作日志与库存不一致");
+  if (
+    s.research &&
+    (typeof s.research !== "object" ||
+      Object.values(s.research).some(
+        (id) => typeof id !== "string" || !s.records.some((r) => r.id === id),
+      ))
+  )
+    throw Error("研究板引用了缺失记录");
   if (!s.narrative) s.narrative = startLevel(emptyNarrative(), s.level);
   if (!validNarrative(s.narrative)) throw new Error("叙事存档格式不兼容");
   return s;

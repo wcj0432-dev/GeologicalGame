@@ -167,12 +167,12 @@ export function afterAction(
           `separation:${level}`,
           "权能 · 不是把元素抹掉",
           [
-            ["goddess", n.evidence.summary, "calm"],
+            ["goddess", `${n.evidence.summary} 先回答你刚才说的“立刻”。`, "calm"],
             [
               "player",
-              "所以“捞出晶体”只是搬家，不是删除。后续冷却才是检验差异的时候。",
+              "你没施法失败，是我把液相和整间岩浆房看成了一本账。",
             ],
-            ["goddess", "正是。神明也不能用“打扫”掩盖质量账本。", "proud"],
+            ["goddess", "我在等继续冷却后的证据。也顺便等你发现这一点。", "proud"],
           ],
           75,
           "balance",
@@ -205,7 +205,7 @@ export function afterAction(
           [
             [
               "goddess",
-              `${after.id}房到达650°C，得到${rock(after).name}，结构示意为${rock(after).texture}。未成晶组分记作玻璃基质。`,
+              `${after.id}房到达650°C，得到${rock(after).name}，结构示意为${rock(after).texture}。未成晶组分记作未解析基质，不预测玻璃含量。`,
               "warm",
             ],
             [

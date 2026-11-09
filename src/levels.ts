@@ -21,7 +21,7 @@ export const levels = [
     id: "C",
     title: "把晶体捞出来！",
     subtitle: "分离与演化",
-    hint: "两房降到约 1100°C，在其中一房分离晶体，再继续冷却到同一温度。让残余熔体 SiO₂ 相差至少 0.2 个百分点。",
+    hint: "让两房出现晶体，只在其中一房分离，再继续冷却到同一温度。让残余熔体 SiO₂ 相差至少 0.2 个百分点。",
     two: true,
     separation: true,
   },
@@ -31,6 +31,14 @@ export const levels = [
     subtitle: "产物与守恒",
     hint: "在早期结晶阶段收集晶体。目标：至少 5 kg 堆晶、其中橄榄石与辉石超过 60%；保留至少 15 kg 熔体，且其 SiO₂ 比初始高 1 个百分点。",
     two: false,
+    separation: true,
+  },
+  {
+    id: "E",
+    title: "未知样品的两次证词",
+    subtitle: "对照实验 · 多解推理",
+    hint: "在研究板提交结构对照、分离对照与候选液相。用样品记录建立分支，让证据说明哪些过程可能发生过。",
+    two: true,
     separation: true,
   },
   {

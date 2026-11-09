@@ -35,7 +35,7 @@ export function performAction(
         limit: "观察不改变任何库存",
       };
     if (action.type === "separateCrystals") {
-      if (!["C", "D", "free"].includes(level))
+      if (!["C", "D", "E", "free"].includes(level))
         throw Error("本关尚未开放晶体分离。");
       if (
         !minerals.some((m) => m.id === action.mineral) ||

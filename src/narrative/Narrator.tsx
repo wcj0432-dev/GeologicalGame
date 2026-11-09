@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import goddessArt from "../assets/goddess.png";
+import expressionArt from "../assets/goddess-expressions.png";
+import { useEffect, useState, useRef } from "react";
 import {
   characters,
   expressionNames,
@@ -10,6 +12,25 @@ import type { NarrativeState } from "./events";
 import type { GeologicalAction } from "./actions";
 import type { Focus } from "./science";
 import { planPresentation } from "./director";
+function PortraitGallery({ onClose }: { onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    ref.current?.showModal();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="art-gallery"
+      aria-label="女神立绘"
+      onCancel={onClose}
+    >
+      <button autoFocus onClick={onClose}>
+        关闭立绘
+      </button>
+      <img src={goddessArt} alt="地质女神 · 原创现代日系半身立绘" />
+    </dialog>
+  );
+}
 export function GoddessPortrait({
   expression,
   motion,
@@ -17,88 +38,26 @@ export function GoddessPortrait({
   expression: Expression;
   motion: Motion;
 }) {
-  const mouths = {
-    calm: "M70 95 Q80 100 90 95",
-    proud: "M70 94 Q82 105 94 92",
-    surprised: "M76 97 Q82 88 86 97 Q82 106 76 97",
-    wry: "M73 98 L88 98",
-    warm: "M70 94 Q81 108 92 94",
+  const positions = {
+    calm: "0% 0%",
+    proud: "50% 0%",
+    surprised: "100% 0%",
+    wry: "0% 100%",
+    warm: "50% 100%",
   };
   return (
-    <svg
-      className={`goddess-portrait motion-${motion}`}
-      viewBox="0 0 160 185"
-      role="img"
-      aria-label={`地质女神，${expressionNames[expression]}（原创SVG占位立绘）`}
-    >
-      <circle
-        cx="80"
-        cy="70"
-        r="59"
-        fill="none"
-        stroke="#bd9e64"
-        strokeDasharray="3 9"
+    <div className={`goddess-art motion-${motion}`}>
+      <div
+        className="expression-sprite"
+        role="img"
+        aria-label={`地质女神 · ${expressionNames[expression]}`}
+        style={{
+          backgroundImage: `url(${expressionArt})`,
+          backgroundPosition: positions[expression],
+        }}
       />
-      <path d="M42 69Q28 9 80 15Q134 12 124 78L133 145H29Z" fill="#c8dadb" />
-      <path d="M48 65Q40 103 80 119Q119 106 113 64L82 37Z" fill="#efdac7" />
-      <path
-        d="M38 72Q30 16 80 19Q125 16 124 69L100 46L83 65L68 43L48 76Z"
-        fill="#d9e7e3"
-      />
-      <path
-        d="M62 119L98 119L126 152L137 183H24L35 152Z"
-        fill="#263c43"
-        stroke="#a2946b"
-      />
-      <path d="M64 120L80 145L96 120L88 171L80 183L72 171Z" fill="#abc3b6" />
-      <path d="M80 130L89 143L80 156L71 143Z" fill="#d6b16e" />
-      <path
-        d="M28 162L61 169L42 176M132 162L99 169L118 176"
-        stroke="#acbeae"
-        fill="none"
-      />
-      <path d="M48 34L63 18L80 29L97 18L112 34L80 39Z" fill="#b39b69" />
-      <path d="M80 15L86 26L80 37L74 26Z" fill="#a4d3c5" />
-      {expression === "warm" ? (
-        <path
-          d="M56 80Q64 73 72 80M89 80Q97 73 105 80"
-          fill="none"
-          stroke="#356668"
-          strokeWidth="3"
-        />
-      ) : (
-        <>
-          <path
-            d="M54 76Q64 70 73 76M88 76Q97 70 106 76"
-            fill="none"
-            stroke="#4b5c57"
-            strokeWidth="2"
-          />
-          <ellipse
-            cx="64"
-            cy="81"
-            rx="4"
-            ry={expression === "wry" ? 2 : 6}
-            fill="#3f8784"
-          />
-          <ellipse
-            cx="97"
-            cy="81"
-            rx="4"
-            ry={expression === "surprised" ? 7 : expression === "wry" ? 2 : 6}
-            fill="#3f8784"
-          />
-        </>
-      )}
-      <path
-        d={mouths[expression]}
-        fill="none"
-        stroke="#996967"
-        strokeWidth="2"
-      />
-      <circle cx="48" cy="91" r="4" fill="#d2a889" opacity=".6" />
-      <circle cx="113" cy="91" r="4" fill="#d2a889" opacity=".6" />
-    </svg>
+      <span className="expression-tag">{expressionNames[expression]}</span>
+    </div>
   );
 }
 export function Narrator({
@@ -126,6 +85,8 @@ export function Narrator({
 }) {
   const [fast, setFast] = useState(false);
   const [history, setHistory] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [gallery, setGallery] = useState(false);
   const node = state.active ? currentNode(state.active) : undefined;
   useEffect(() => {
     if (!fast || !node || node.choices) return;
@@ -138,12 +99,16 @@ export function Narrator({
   }, [state.active?.scene.id, node?.id, focus, onDirect]);
   return (
     <section className="narrator panel" aria-label="女神叙事与研究助手">
+      {gallery && <PortraitGallery onClose={() => setGallery(false)} />}
       <div className="portrait-wrap">
         <GoddessPortrait
           expression={node?.expression ?? "calm"}
           motion={node?.motion ?? "idle"}
         />
         <small>地质女神 · 教学引导</small>
+        <button className="portrait-expand" onClick={() => setGallery(true)}>
+          查看立绘
+        </button>
       </div>
       <div className="dialogue-body">
         <div className="dialogue-heading">
@@ -204,10 +169,17 @@ export function Narrator({
         </div>
         <div className="research-actions">
           <button onClick={onInspect}>暂停并观察矿物</button>
-          <button onClick={() => onHint(1)}>现象提示</button>
-          <button onClick={() => onHint(2)}>变量提示</button>
-          <button onClick={() => onHint(3)}>原理解释</button>
-          <button onClick={onCheck}>检查研究目标</button>
+          <button aria-expanded={help} onClick={() => setHelp((v) => !v)}>
+            问女神
+          </button>
+          {help && (
+            <div className="help-options">
+              <button onClick={() => onHint(1)}>现象提示</button>
+              <button onClick={() => onHint(2)}>变量提示</button>
+              <button onClick={() => onHint(3)}>原理解释</button>
+              <button onClick={onCheck}>检查研究目标</button>
+            </div>
+          )}
         </div>
         <p className="action-feedback" role="status">
           {state.feedback}
